@@ -34,4 +34,7 @@ Tasks:
 [2]: Identify tanks under construction - Status: Pending
 [3]: Count total tanks and those under construction - Status: Pending
 
+### Must remember
+Now after receiving the user input you must response with the correct format thinking
+very carefull what has to be done step by step.
 User Input: 
