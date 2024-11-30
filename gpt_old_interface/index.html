@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Chatbot Interface</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <h1>Chatbot Interface</h1>
+            <button id="reset-btn" class="reset-btn">Reset</button>
+        </header>
+
+        <div id="chat-history" class="chat-history"></div>
+
+        <div class="input-section">
+            <div class="image-upload">
+                <label for="image-input">Upload Images:</label>
+                <input type="file" id="image-input" multiple accept="image/*">
+                <div id="image-preview" class="image-preview"></div>
+            </div>
+
+            <textarea id="text-input" class="text-input" placeholder="Type your message..."></textarea>
+            <button id="send-btn" class="send-btn">Send</button>
+        </div>
+
+        <div id="popup-container" class="popup hidden">
+            <div class="popup-content">
+                <img id="popup-image" src="" alt="Preview" class="popup-image hidden">
+                <p id="popup-message"></p>
+                <div class="popup-buttons">
+                    <button id="popup-confirm" class="popup-btn">Confirm</button>
+                    <button id="popup-cancel" class="popup-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
