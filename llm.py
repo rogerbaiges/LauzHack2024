@@ -8,10 +8,10 @@ class LLM:
 
 		Args:
 			api_key (str): OpenAI API key.
-			model (str): The model to use (default is "gpt-4-turbo").
+			model (str): The model to use (default is "gpt-4-mini").
 			temperature (float): Controls the creativity of the responses.
 			max_tokens (int): Maximum number of tokens for the generated response.
-			initial_prompt (str): A prompt to define the LLM's initial task or behavior.
+			system_prompt (str): A prompt to define the LLM's behavior.
 		"""
 		assert api_key, "API key must be provided"
 
