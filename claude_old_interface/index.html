@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='/styles.css') }}">
+</head>
+<body>
+    <div class="chatbot-container">
+        <!-- Chat History -->
+        <div id="chat-history" class="chat-history">
+            <!-- Messages will appear here -->
+        </div>
+
+        <!-- Upload Section -->
+        <div class="image-upload-container">
+            <label for="image-input" class="image-upload-label">Upload Images:</label>
+            <input type="file" id="image-input" multiple accept="image/*">
+            <div id="image-preview" class="image-preview">
+                <!-- Image previews will appear here -->
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Type your message here...">
+            <button id="send-button" class="btn">Send</button>
+            <button id="reset-button" class="btn reset">Reset</button>
+        </div>
+    </div>
+
+    <!-- Pop-Up Modal -->
+    <div id="popup-modal" class="popup-modal hidden">
+        <div class="popup-content">
+            <p id="popup-question">This is a backend-triggered question.</p>
+            <div id="popup-image-preview" class="popup-image-preview">
+                <!-- Image preview for popup -->
+            </div>
+            <div class="popup-buttons">
+                <button id="confirm-button" class="btn">Confirm</button>
+                <button id="cancel-button" class="btn cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
