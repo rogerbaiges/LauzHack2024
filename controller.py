@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from os import getenv
 from segmentor import ImageSegmenter
 import re
+from functions import user_interaction, calculate
 
 load_dotenv()
 OPENAI_API_KEY = getenv("OPENAI_API_KEY")
@@ -15,13 +16,19 @@ class Controller:
 		self.execution_base_prompt = open(execution_base_prompt_file, "r").read()
 
 		self.function_mapping = {
-
+			"segment": ImageSegmenter.segment,
+			"user_interaction": user_interaction,
+			"calculate": calculate,
+			"segment_unique": ImageSegmenter.segment_unique,
+			"count_people": ImageSegmenter.count_people,
+			"change_color": ImageSegmenter.change_color,
+			"calculate_crop_percentage": ImageSegmenter.calculate_crop_percentage
 		}
 
 		self.actions: list[dict] = [] # Contains dictionaries with the title, function_name, arguments and result of each action
 		self.num_actions: int = 0
 
-	def run(self, prompt: str, image_path) -> str:
+	def run(self, prompt: str, image_path: str) -> str:
 		self.general_llm.clear_history()
 		self.execution_llm.clear_history()
 
@@ -31,18 +38,26 @@ class Controller:
 		goal, action_titles = self.split_general_actions(filtered_general_response)
 
 		for i, action_title in enumerate(action_titles):
-			execution_response = self.execution_llm.ask(self.concatenate_execution_prompt(action_title, goal, [action_titles[j]["answer"] for j in range(i)]))
+			execution_response = self.execution_llm.ask(self.concatenate_execution_prompt(action_title, goal, [action_titles[j]["result"] for j in range(i)]))
 			function_call_string = self.parse_function_call(execution_response)
-			result = self.execute_function(function_call_string)
+			result = self.execute_function(function_call_string, image_path)
 			self.actions.append({
 				"title": action_title,
 				"function_name": function_call_string["function_name"],
 				"arguments": function_call_string["arguments"],
-				"answer": function_call_string["answer"]
+				"answer": function_call_string["answer"],
+				"result": result
 			})
 			self.num_actions += 1
 
-		final_answer = self.execution_llm.ask(self.concatenate_execution_prompt("Now with all the information you must answer the question in order to achieve the GOAL.", goal, [action_titles[j]["answer"] for j in range(self.num_actions)]))
+			self.message_buffer.append({
+				"role": "assistant",
+				"content": f"Task: {action_title}\nResult: {result}"
+			})
+			
+
+
+		final_answer = self.execution_llm.ask(self.concatenate_execution_prompt("Now with all the information you must answer the question in order to achieve the GOAL.", goal, [action_titles[j]["result"] for j in range(self.num_actions)]))
 
 		return self.parse_final_answer(final_answer)
 	
@@ -78,7 +93,6 @@ class Controller:
 
 			function_name = function_call[:open_parenthesis_index].strip()
 			arguments = function_call[open_parenthesis_index + 1:close_parenthesis_index].split(",")
-
 		
 		return {
 			"function_name": function_name,
@@ -105,17 +119,17 @@ class Controller:
 
 		return goal, action_titles
 	
-	def concatenate_execution_prompt(self, action_title: str, goal: str, past_action_answers: list[str]) -> str:
+	def concatenate_execution_prompt(self, action_title: str, goal: str, past_action_results: list[str]) -> str:
 		prompt = f"{self.execution_base_prompt}\nTask: {action_title}\nExtra information:\n- GOAL = {goal}"
-		for title in past_action_answers:
-			prompt += f"\n- {title}"
+		for result in past_action_results:
+			prompt += f"\n- {result}"
 
 		return prompt
 	
-	def execute_function(self, function_call: dict) -> str:
+	def execute_function(self, function_call: dict, image_path: str) -> str:
 		# Execute the function and return the result
 		if function_call["function_name"] in self.function_mapping:
-			return self.function_mapping[function_call["function_name"]](*function_call["arguments"])
+			return self.function_mapping[function_call["function_name"]](*function_call["arguments"], image_path)
 		else:
 			raise Exception(f"Function {function_call['function_name']} not found.")
 
