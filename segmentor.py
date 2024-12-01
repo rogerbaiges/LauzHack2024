@@ -497,8 +497,7 @@ class ImageSegmenter:
 		
 		image = cv2.imread(self.image_path)
 		people_count, density = LWCC.get_count(self.image_path, return_density=True)
-		plt.imshow(density)
-		plt.show()
+
 		return people_count
 	def _show_mask(self, mask, ax, random_color=False):
 		color = np.array([30/255, 144/255, 255/255, 0.6])
@@ -1009,7 +1008,21 @@ class ImageSegmenter:
 		crop_visualization = self.get_visualized_crop_image()
 		plt.imsave(crop_analysis_path, crop_visualization)
 		return f'The crop percentage in the image is {percentage}%.', crop_analysis_path
+	
+	def count_crowd(self, image):
+		"""
+		Count the number of people in an image and save a visualization.
+		
+		Args:
+			image (str): Path to the input image.
 
+		Returns:
+			str: Message describing the crowd count.
+			str: Path to the saved visualization of the crowd count.
+		"""
+		count = self.count_people(image)
+		
+		return f'The crowd count in the image is {count}.', ''
 
 
 
