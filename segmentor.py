@@ -634,7 +634,61 @@ class ImageSegmenter:
         plt.title("Inpainted Image")
         plt.show()
 
+    def get_segmented_image(self):
+        """Creates an image containing only the segmented objects (masks)."""
 
+        segmented_image = np.zeros_like(self.image)
+
+        for mask in self.unique_masks:
+            bool_mask = mask.astype(bool)
+            
+            segmented_image[bool_mask] = self.image[bool_mask]  # Copy masked parts to the new image
+
+        return segmented_image
+    
+    def count_masks_by_color(self, target_color, tolerance=60, enhance_contrast = True):
+        """Counts masks containing elements with a similar color to the target color.
+
+        Args:
+            target_color (tuple): RGB target color tuple (e.g., (255, 0, 0) for red).
+            tolerance (int): Tolerance for color similarity (default: 30).
+
+        Returns:
+            int: Number of masks matching the color criteria.
+        """
+
+        matching_masks_count = 0
+        enhanced_image = self._enhance_contrast(self.image)
+        for mask in self.unique_masks:
+            bool_mask = mask.astype(bool)
+            masked_image = enhanced_image[bool_mask]  # Apply mask to image
+           
+                                                      
+            pixels = masked_image.reshape(-1, 3)
+            kmeans = KMeans(n_clusters=1, random_state=0)  # Find the dominant color
+            kmeans.fit(pixels)
+            dominant_color = tuple(map(int, kmeans.cluster_centers_[0]))
+            print(dominant_color)
+
+            color_distance = np.linalg.norm(np.array(dominant_color) - np.array(target_color))
+
+            if color_distance <= tolerance:
+                matching_masks_count += 1
+
+        return matching_masks_count
+    def _enhance_contrast(self, image):
+        """Enhances contrast using CLAHE (Contrast Limited Adaptive Histogram Equalization)."""
+
+        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+        l, a, b = cv2.split(lab)
+
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        l_enhanced = clahe.apply(l)
+
+        lab_enhanced = cv2.merge((l_enhanced, a, b))
+        image_enhanced = cv2.cvtColor(lab_enhanced, cv2.COLOR_LAB2RGB)
+
+        return image_enhanced
 
 
     def remove_and_inpaint_cv2(self, image, mask):
@@ -650,6 +704,224 @@ class ImageSegmenter:
 
 
         return inpainted_image
+    
+    def transcribe_text_from_image(self, image_path=None, model_path="path/to/ocr/model"):
+        """
+        Transcribes text from an image using OCR.
+
+        Args:
+            image_path (str, optional): Path to the image. If None, uses the currently loaded image. Defaults to None.
+            model_path (str, optional): Path to the OCR model. Defaults to "path/to/ocr/model". You'll need to replace this with the actual path. 
+
+        Returns:
+            str: The transcribed text.
+        """
+        try:
+            import easyocr  # You'll need to install easyocr: pip install easyocr
+        except ImportError:
+            print("easyocr is not installed. Please install it using: pip install easyocr")
+            return ""
+
+        if image_path:
+            self.image_path = image_path
+            image = cv2.imread(self.image_path)
+        elif hasattr(self, 'image'):  # Check if an image is already loaded
+            image = self.image
+        else:
+            print("No image loaded or provided. Please load an image first.")
+            return ""
+
+        reader = easyocr.Reader(['en']) # Initialize reader with preferred languages
+        result = reader.readtext(image)
+
+
+        transcribed_text = ""
+        for (bbox, text, prob) in result:
+             transcribed_text += text + " "
+        
+        return transcribed_text.strip()
+    
+    def analyze_fuel_level(self, image_path=None, visualize=True):
+        """
+        Analyzes images of fuel gauges to estimate the fuel level. This could be used 
+        for remote monitoring of fuel tanks at petrol stations or detecting anomalies.
+
+        Args:
+            image_path (str, optional): Path to the image. If None, uses the current image. Defaults to None.
+            visualize (bool, optional): Whether to display intermediate steps. Defaults to False.
+
+        Returns:
+            float: Estimated fuel level (0.0 to 1.0).  Returns -1 if gauge detection fails.
+        """
+        if image_path:
+            self.image_path = image_path
+            image = cv2.imread(self.image_path)
+        elif hasattr(self, 'image'):
+            image = self.image
+        else:
+            print("No image loaded or provided.")
+            return -1  # Or raise an exception
+
+        gauge_bbox = self.detect_gauge(image)  # Replace with your gauge detection logic
+
+        if gauge_bbox is None:
+            print("Fuel gauge not detected. Using the whole image.")
+            x, y, w, h = 0, 0, image.shape[1], image.shape[0]  # Use whole image dimensions
+        else:
+            x, y, w, h = gauge_bbox
+
+            x = max(x, 0)
+            y = max(y, 0)
+            x = min(x, image.shape[1])
+            y = 0 if y > image.shape[0] else y
+
+            w = min(w, image.shape[1])
+            h = min(h, image.shape[0])
+
+
+        print(gauge_bbox)
+        gauge_image = image[y:y + h, x:x + w]
+
+        # 2. Convert to HSV and threshold for needle color (e.g., red).
+        hsv = cv2.cvtColor(gauge_image, cv2.COLOR_BGR2HSV)
+        lower_red = np.array([0, 50, 50])    # Adjust these ranges
+        upper_red = np.array([10, 255, 255]) # according to the needle color
+        mask1 = cv2.inRange(hsv, lower_red, upper_red)
+        lower_red = np.array([170, 50, 50])   
+        upper_red = np.array([180, 255, 255])
+        mask2 = cv2.inRange(hsv, lower_red, upper_red)
+
+
+        mask = mask1 | mask2
+
+        needle_angle = self.find_needle_angle(mask, visualize=visualize) # Replace with your needle angle detection logic
+
+        if needle_angle is None: # In case an error occurs in angle finding (e.g., no lines found)
+            return -1
+        
+        print(needle_angle)
+        min_angle = 25  # Empty angle
+        max_angle = 155  # Full angle
+        fuel_level = (needle_angle - min_angle) / (max_angle - min_angle)
+        fuel_level = np.clip(fuel_level, 0.0, 1.0)  # Ensure it's within 0-1
+
+        print(fuel_level)
+
+        return fuel_level
+    
+
+    def detect_gauge(self, image, method='circle_detection', template_path="gauge_template.jpg", visualize=True):
+        """
+        Detects the fuel gauge in an image.
+
+        Args:
+            image (numpy.ndarray): The input image.
+            method (str, optional): The method to use for gauge detection. 
+                'template_matching' uses template matching (requires `template_path`).
+                'circle_detection' uses Hough circle detection.
+                Defaults to 'template_matching'.
+            template_path (str, optional): Path to the template image if using template matching. Defaults to None.
+            visualize (bool, optional): Whether to display the detected gauge. Defaults to False.
+
+        Returns:
+            tuple: Bounding box of the gauge (x, y, w, h) or None if not found.
+        """
+
+        if method == 'template_matching':
+            if template_path is None:
+                raise ValueError("template_path must be provided when using template matching.")
+            template = cv2.imread(template_path, cv2.IMREAD_GRAYSCALE)
+            template = cv2.resize(template, (0, 0), fx=0.5, fy=0.5)
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            res = cv2.matchTemplate(gray, template, cv2.TM_CCOEFF_NORMED)  # Use normalized cross-correlation
+            _, max_val, _, max_loc = cv2.minMaxLoc(res)
+            if max_val > 0.7:  # Set a threshold for a good match  # Adjust threshold as needed.
+                h, w = template.shape
+                x, y = max_loc
+                gauge_bbox = (x, y, w, h)
+
+            else:
+                 gauge_bbox = None
+
+
+
+
+        elif method == 'circle_detection': # Hough Circle Transform
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            blurred = cv2.medianBlur(gray, 5) # Blur to reduce noise
+            circles = cv2.HoughCircles(blurred, cv2.HOUGH_GRADIENT, 1, 20,
+                                       param1=50, param2=30, minRadius=0, maxRadius=0)
+
+            if circles is not None:
+                circles = np.uint16(np.around(circles))
+                largest_circle = max(circles[0, :], key=lambda x: x[2])  # Find circle with largest radius
+                x, y, r = np.int16(largest_circle)
+                gauge_bbox = (max(x-r,0), max(y-r,0), 2*r, 2*r)
+
+            else:
+                gauge_bbox = None
+
+
+        else:
+            raise ValueError("Invalid method specified. Choose 'template_matching' or 'circle_detection'.")
+
+
+        if visualize and gauge_bbox is not None:  # Corrected visualization logic
+            x, y, w, h = gauge_bbox
+            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+            plt.title("Detected Gauge")
+            plt.show()
+
+        return gauge_bbox
+    
+    
+    def find_needle_angle(self, mask, visualize):
+        """(Placeholder) Finds the angle of the needle."""
+
+        edges = cv2.Canny(mask, 50, 150, apertureSize=3)
+
+        cv2.imshow("idk", edges)
+        lines = cv2.HoughLinesP(edges, 1, np.pi/220, threshold=20, minLineLength=10, maxLineGap=10)
+
+        if lines is not None:
+            longest_line = None
+            max_length = 0
+
+
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+                if length > max_length:
+                    max_length = length
+                    longest_line = line
+
+            if longest_line is not None:
+
+                x1, y1, x2, y2 = longest_line[0]
+
+                angle = np.arctan2(y2 - y1, x2 - x1) * 180. / np.pi # Convert from radians to degrees
+
+
+                if visualize:
+                    # Create a copy of the mask with three color channels to draw the line on it
+                    mask_color = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+
+                    cv2.line(mask_color, (x1, y1), (x2, y2), (0, 0, 255), 2) # Draw on the color copy
+                    plt.imshow(mask_color)
+                    plt.title(f"Needle Angle: {angle:.2f}")
+                    plt.show()
+
+
+                return angle
+            else:
+                print("Error: No line detected.")
+                return None
+        else:
+            print("Error: No lines detected by HoughLinesP.")
+            return None
+
+
 
 
 
@@ -678,16 +950,20 @@ if __name__ == "__main__":
     people_count = segmenter.count_people(image_path=image_path)
     print(f"Number of people detected: {people_count}")
     """
+
+    text = segmenter.transcribe_text_from_image("./best_summer_ever.png")
+    print(text)
     """
-    boxes = segmenter.load_and_predict_dino("deposits.png", "circle.")
+    boxes = segmenter.load_and_predict_dino("gauge.png", "gauge.")
     masks = segmenter.segment_masks()
-    print(f"Number of masks: {segmenter.count_masks()}")
-    segmenter.segment_first_mask_variations()
-    final_image = segmenter.apply_masks_to_image(color=(0, 255, 0))
+    final_image = segmenter.apply_masks_to_image(color=(255, 0, 0))
     plt.imshow(final_image)
     plt.axis('off')
     plt.show()
+    print(f"Number of masks: {segmenter.count_masks()}")
+    segmenter.segment_first_mask_variations()
     """
+
     """
     reference_image_path = "reference.png"
     faces_folder = "faces"
@@ -743,6 +1019,18 @@ if __name__ == "__main__":
     print(f"Estimated crop coverage: {crop_coverage:.2f}%")
     
     palette = segmenter.create_palette("faces/cai3.jpg", num_colors=5, display=True)
-    """
+    
     image_path ="faces/cai.jpg"
     segmenter.remove_from_click(image_path)
+    
+    boxes = segmenter.load_and_predict_dino("car_parking.png", "car.")
+    masks = segmenter.segment_masks()
+    print(f"Number of masks: {segmenter.count_masks()}")
+
+
+    plt.imshow(segmenter.get_segmented_image())
+
+
+    color = segmenter.count_masks_by_color((150,150,150))
+    print(f"Number of white masks: {color}")
+    """
