@@ -58,28 +58,39 @@ def process_message():
         goal, action_titles = controller.split_general_actions(filtered_general_response)
 
         for i, action_title in enumerate(action_titles):
-            execution_response = controller.execution_llm.ask(controller.concatenate_execution_prompt(action_title, goal, [controller.actions[j]["result"] for j in range(i)]))
-            function_call_string = controller.parse_function_call(execution_response)
-            result, image_path_new = controller.execute_function(function_call_string, image_path)
-            print(image_path)
-            action_data = {
-                "title": action_title,
-                "function_name": function_call_string["function_name"],
-                "arguments": function_call_string["arguments"],
-                "answer": function_call_string["answer"],
-                "image_url": image_path_new, # include image URL
-                "result": result
-            }
-            controller.actions.append(action_data)
-            controller.num_actions += 1
-            
-            # Yield intermediate action data as JSON
-            print(action_data)
-            yield json.dumps(action_data) + '\n'
+            try:
+                execution_response = controller.execution_llm.ask(controller.concatenate_execution_prompt(action_title, goal, [controller.actions[j]["result"] for j in range(i)]))
+                function_call_string = controller.parse_function_call(execution_response)
+                result, image_path_new = controller.execute_function(function_call_string, image_path)
+                print(image_path)
+                action_data = {
+                    "title": action_title,
+                    "function_name": function_call_string["function_name"],
+                    "arguments": function_call_string["arguments"],
+                    "answer": function_call_string["answer"],
+                    "image_url": image_path_new, # include image URL
+                    "result": result
+                }
+                controller.actions.append(action_data)
+                controller.num_actions += 1
+                
+                # Yield intermediate action data as JSON
+                print(image_path_new)
+                yield json.dumps(action_data) + '\n'
+            except Exception as e:  # Catch specific exception for each action
+                print(f"Error executing action {action_title}: {e}") # Log details!
+                error_data = {
+                    "title": action_title,
+                    "error": str(e)
+                }
+                yield json.dumps(error_data) + '\n' # Send error info to the client
         
         final_answer = controller.execution_llm.ask(controller.concatenate_execution_prompt("Now with all the information you must answer the question in order to achieve the GOAL.", goal, [controller.actions[j]["result"] for j in range(controller.num_actions)]))
         final_answer_data = {"sender": "bot", "message": controller.parse_final_answer(final_answer), "imageUrl": image_path} # Final answer with image
         chat_history.append(final_answer_data)
+        print(chat_history)
+        print("AAAAAAAAA")
+        print(final_answer_data)
         yield json.dumps(final_answer_data) + '\n'
         
 

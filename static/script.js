@@ -102,11 +102,11 @@ document.addEventListener('DOMContentLoaded', () => {
             taskbarItem.classList.add('taskbar-item', borderClass); // Add border class
     
             const img = document.createElement('img');
+            console.log(imageUrl)
             img.src = imageUrl;
             img.alt = 'Action Image';
             taskbarItem.appendChild(img);
     
-            // You might want to add a click handler to view the larger image here as well
     
             imageTaskbar.appendChild(taskbarItem);
         }
@@ -354,6 +354,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) throw new Error('Failed to process message.');
 
+            console.log(response)
+
             const reader = response.body.getReader();
             let decoder = new TextDecoder("utf-8");
             while (true) {
@@ -367,10 +369,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         let data = JSON.parse(message);
                         if (data.sender === 'bot') {
-                            displayChatMessage(data.message, data.sender, data.imageUrl);
+                            displayChatMessage(data.message, data.sender, data.image_url);
                         } else {
                             displayAction(data);
-                            addImageToTaskbar(data.imageUrl, 'action-border'); // Add image to taskbar
+                            console.log(data.mesage)
+                            console.log(data.image_url)
+                            addImageToTaskbar(data.image_url, 'action-border'); // Add image to taskbar
                         }
                     } catch (e) {
                     console.error("Could not parse JSON:", message, e); // Handle possible parsing errors
@@ -399,9 +403,9 @@ document.addEventListener('DOMContentLoaded', () => {
         messageDiv.classList.add('action-message');  // Style for action updates
         messageDiv.innerHTML = `<strong>${actionData.title}</strong>: ${actionData.result}`; // Show task title & result
 
-        if (actionData.imageUrl) {
+        if (actionData.image_url) {
             const img = document.createElement('img');
-            img.src = actionData.imageUrl;
+            img.src = actionData.image_url;
             img.classList.add('action-image');
             img.alt = actionData.title;
             // ... (Add click event for enlarged view as before if needed)

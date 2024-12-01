@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from os import getenv
 from segmentor import ImageSegmenter
 import re
-from functions import user_interaction, calculate
+from functions import calculate
 
 load_dotenv()
 OPENAI_API_KEY = getenv("OPENAI_API_KEY")
@@ -42,7 +42,6 @@ class Controller:
 		)
 		self.function_mapping = {
 			"segment": self.segmenter.segment,
-			"user_interaction": user_interaction,
 			"calculate": calculate,
 			"segment_unique": self.segmenter.segment_unique,
 			"count_people": self.segmenter.count_people,
