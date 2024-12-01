@@ -286,29 +286,29 @@ class ImageSegmenter:
 		plt.show()
 		return people_count
 	def detect_objects_yolo(self, image_path=None, model_path="yolov8n.pt", conf_threshold=0.5):
-	  from ultralytics import YOLO
-	  if image_path:
-		  self.image_path = image_path
-		  self.image = np.array(Image.open(self.image_path).convert("RGB"))
-	  else:
-		  self.image = np.array(Image.fromarray(self.image).convert("RGB"))
-	  model = YOLO(model_path)
-	  results = model(self.image)
-	  detections = []
-	  for r in results:
-		  boxes = r.boxes  
-		  for box in boxes:
-			  b = box.xyxy[0]  
-			  c = int(box.cls)  
-			  conf = box.conf[0]  
-			  if conf > conf_threshold:
-				  detections.append({
-					  "box": b.tolist(),
-					  "class_id": c,
-					  "class_name": model.names[c],
-					  "confidence": conf.item(),
-				  })
-	  return detections
+		from ultralytics import YOLO
+		if image_path:
+			self.image_path = image_path
+			self.image = np.array(Image.open(self.image_path).convert("RGB"))
+		else:
+			self.image = np.array(Image.fromarray(self.image).convert("RGB"))
+		model = YOLO(model_path)
+		results = model(self.image)
+		detections = []
+		for r in results:
+			boxes = r.boxes  
+			for box in boxes:
+				b = box.xyxy[0]  
+				c = int(box.cls)  
+				conf = box.conf[0]  
+				if conf > conf_threshold:
+					detections.append({
+						"box": b.tolist(),
+						"class_id": c,
+						"class_name": model.names[c],
+						"confidence": conf.item(),
+					})
+		return detections
 	
 	def analyze_crop_coverage(self, image_path, segmentation_method='felzenszwalb', num_colors=5, visualize=True):
 		"""
@@ -737,8 +737,8 @@ class ImageSegmenter:
 
 		transcribed_text = ""
 		for (bbox, text, prob) in result:
-			 transcribed_text += text + " "
-		
+			transcribed_text += text + " "
+			 
 		return transcribed_text.strip()
 	
 	def analyze_fuel_level(self, image_path=None, visualize=True):
@@ -841,11 +841,7 @@ class ImageSegmenter:
 				gauge_bbox = (x, y, w, h)
 
 			else:
-				 gauge_bbox = None
-
-
-
-
+				gauge_bbox = None
 		elif method == 'circle_detection': # Hough Circle Transform
 			gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 			blurred = cv2.medianBlur(gray, 5) # Blur to reduce noise
