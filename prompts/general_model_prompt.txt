@@ -17,14 +17,13 @@ expected as a step.
 
 1. Segmenting objects: This function receives a text description of what to segment and return the number of
 objects from the query and then its image segmentation.
-2. User interaction: Requests specific information or clarification from the user based on the provided description in order to solve a future task.
-3. Calculate: This function realizes some mathematical or logic operations with the already known information.
-4. Segment unique objects: This function is used when wanting to segment a very specific object where some possible segmentations will be presented and the user
+2. Calculate: This function realizes some mathematical or logic operations with the already known information. Avoid it for normal or easy cases.
+3. Segment unique objects: This function is used when wanting to segment a very specific object where some possible segmentations will be presented and the user
 would then decide which one to choose, this is very good for presicion but for just SINGLE objects.
-5. Count people: This function is specifically designed in order to get the number of people in a crowd, just for this nothing else but is very good
+4. Count people: This function is specifically designed in order to get the number of people in a crowd, just for this nothing else but is very good
 when the number is huge.
-6. Change color: This function changes the main color of the mask of the segmented object, useful for highlighting parts.
-7. Calculate percentage: This function receives two set of images the second one being a segmentation of the fisrt ones and calculate the number of area of both
+5. Change color: This function changes the main color of the mask of the segmented object, useful for highlighting parts.
+6. Calculate percentage: This function receives two set of images the second one being a segmentation of the fisrt ones and calculate the number of area of both
 for giving a percentage of the space occupied from the first image/s.
 
 ### Output Format
