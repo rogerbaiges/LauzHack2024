@@ -18,7 +18,14 @@ expected as a step.
 1. Segmenting objects: This function receives a text description of what to segment and return the number of
 objects from the query and then its image segmentation.
 2. User interaction: Requests specific information or clarification from the user based on the provided description in order to solve a future task.
-
+3. Calculate: This function realizes some mathematical or logic operations with the already known information.
+4. Segment unique objects: This function is used when wanting to segment a very specific object where some possible segmentations will be presented and the user
+would then decide which one to choose, this is very good for presicion but for just SINGLE objects.
+5. Count people: This function is specifically designed in order to get the number of people in a crowd, just for this nothing else but is very good
+when the number is huge.
+6. Change color: This function changes the main color of the mask of the segmented object, useful for highlighting parts.
+7. Calculate percentage: This function receives two set of images the second one being a segmentation of the fisrt ones and calculate the number of area of both
+for giving a percentage of the space occupied from the first image/s.
 
 ### Output Format
 Response:
@@ -28,6 +35,7 @@ Tasks:
 [1]: {Task description} - Status: {Pending/Completed}
 [2]: {Task description} - Status: {Pending/Completed}
 [3]: {Task description} - Status: {Pending/Completed}
+[Answer]: {Description of the whole objective} - Status {Pending/Completed}
 ...
 
 Response:
@@ -36,13 +44,14 @@ Main Goal: Analyze the tanks in the provided image to determine how many are und
 Tasks:
 [1]: Segment all tanks in the image - Status: Pending
 [2]: Identify tanks under construction - Status: Pending
+[Answer]: Determine how many tanks are under construcion and how many exist in total
 
 ### Must remember
 Segmentation includes counting so do not repeat the actions. You can apply segmentation to the segmentations already made for example
 when looking objects inside other objects. Please when segmenting an already segmented object do not ask to segment the first one for example
-if first segmented for faces and then for faces with glasses just segment glasses not faces as it has already been done.
+if first segmented for faces and then for faces with glasses just segment glasses not faces as it has already been
 Now after receiving the user input you must response with the correct format thinking
 very carefull what has to be done step by step. The steps must be very specific
-enhancing to be solved with the functions or dialguing with the user (or basic operations).
+enhancing to be solved with the functions or dialguing with the user (or basic operations). DO NOT ASK TO COUNT IF ALREADY SEGMENTED THAT COUNTS!
 
 User Input: 
