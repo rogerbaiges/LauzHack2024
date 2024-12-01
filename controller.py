@@ -10,7 +10,7 @@ OPENAI_API_KEY = getenv("OPENAI_API_KEY")
 class Controller:
 	def __init__(self, general_base_prompt_file: str = './prompts/general_model_prompt.txt', execution_base_prompt_file: str = './prompts/execution_model_prompt.txt') -> None:
 		self.general_llm = LLM(api_key=OPENAI_API_KEY, temperature=0.5, max_tokens=1000)
-		self.execution_llm = LLM(api_key=OPENAI_API_KEY, temperature=0.5, max_tokens=1000)
+		self.execution_llm = LLM(api_key=OPENAI_API_KEY, temperature=0.25, max_tokens=1000)
 		self.general_base_prompt_file = open(general_base_prompt_file, "r").read()
 		self.execution_base_prompt = open(execution_base_prompt_file, "r").read()
 
@@ -30,19 +30,21 @@ class Controller:
 		filtered_general_response = self.filter_general_response(general_response)
 		goal, action_titles = self.split_general_actions(filtered_general_response)
 
-		for action_title in action_titles:
-			execution_response = self.execution_llm.ask(self.execution_base_prompt + prompt)
+		for i, action_title in enumerate(action_titles):
+			execution_response = self.execution_llm.ask(self.concatenate_execution_prompt(action_title, goal, [action_titles[j]["answer"] for j in range(i)]))
 			function_call_string = self.parse_function_call(execution_response)
+			result = self.execute_function(function_call_string)
 			self.actions.append({
 				"title": action_title,
 				"function_name": function_call_string["function_name"],
 				"arguments": function_call_string["arguments"],
+				"answer": function_call_string["answer"]
 			})
 			self.num_actions += 1
 
-		final_answer = self.execution_llm.ask(self.execution_base_prompt + prompt)
+		final_answer = self.execution_llm.ask(self.concatenate_execution_prompt("Now with all the information you must answer the question in order to achieve the GOAL.", goal, [action_titles[j]["answer"] for j in range(self.num_actions)]))
 
-		return self.parse_final_answer(execution_response)
+		return self.parse_final_answer(final_answer)
 	
 	@staticmethod
 	def filter_general_response(general_response: str) -> str:
@@ -58,44 +60,30 @@ class Controller:
 		
 	@staticmethod
 	def parse_function_call(execution_output: str) -> dict:
-		"""
-		Parses the execution message, extracts the function call, and executes the function.
+		function_name, arguments, answer = None, None, None
 
-		Parameters:
-			message (str): The complete execution message.
+		lines = execution_output.split("\n")
 
-		Returns:
-			dict: A dictionary containing:
-				- 'action_description' (str): The description after "Next Action:".
-				- 'function_result' (str): The result of the function execution.
-		"""
-		# Split the message into paragraphs
-		paragraphs = execution_output.strip().split("\n\n")
-		
-		# Ensure the message has at least three paragraphs
-		if len(paragraphs) < 3:
-			raise ValueError("The message format is invalid or incomplete.")
-		
-		# Extract the first paragraph and process "Next Action"
-		action_description = paragraphs[0].replace("Next Action: ", "").strip()
-		
-		# Extract the function call from the last paragraph
-		function_call = paragraphs[2].replace("Function to Call: ", "").strip()
-		
-		# Dynamically parse the function name and argument
-		function_name, argument = function_call.strip('[]').split("(", 1)
-		argument = argument.strip(")").strip("'")
-		
-		# Execute the function dynamically
-		if function_name in self.function_mapping:
-			function_result = self.function_mapping[function_name](argument)
-		else:
-			raise ValueError(f"Function '{function_name}' is not defined.")
+		answer_line = lines[0]
+		answer = answer_line[answer_line.find("Answer:") + len("Answer:"):].strip()
+
+		if len(lines) > 1:
+			function_call_line = lines[1]
+
+			open_bracket_index = function_call_line.find("[")
+			close_bracket_index = function_call_line.find("]")
+			function_call = function_call_line[open_bracket_index + 1:close_bracket_index].strip()
+			open_parenthesis_index = function_call.find("(")
+			close_parenthesis_index = function_call.find(")")
+
+			function_name = function_call[:open_parenthesis_index].strip()
+			arguments = function_call[open_parenthesis_index + 1:close_parenthesis_index].split(",")
+
 		
 		return {
-			"action_description": action_description,
-			"function_result": function_result,
 			"function_name": function_name,
+			"arguments": arguments,
+			"answer": answer
 		}
 
 	@staticmethod
@@ -116,4 +104,18 @@ class Controller:
 		action_titles = action_titles[1:]
 
 		return goal, action_titles
+	
+	def concatenate_execution_prompt(self, action_title: str, goal: str, past_action_answers: list[str]) -> str:
+		prompt = f"{self.execution_base_prompt}\nTask: {action_title}\nExtra information:\n- GOAL = {goal}"
+		for title in past_action_answers:
+			prompt += f"\n- {title}"
+
+		return prompt
+	
+	def execute_function(self, function_call: dict) -> str:
+		# Execute the function and return the result
+		if function_call["function_name"] in self.function_mapping:
+			return self.function_mapping[function_call["function_name"]](*function_call["arguments"])
+		else:
+			raise Exception(f"Function {function_call['function_name']} not found.")
 
