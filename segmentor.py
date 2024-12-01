@@ -152,7 +152,6 @@ class ImageSegmenter:
 			in_fmt="cxcywh",
 			out_fmt="xyxy"
 		).numpy()
-		print(self.xyxy_boxes)
 		return self.xyxy_boxes
 	def segment_masks(self, area_threshold=100, iou_threshold=0.5):
 		image = Image.open(self.image_path).convert("RGB")
@@ -262,9 +261,6 @@ class ImageSegmenter:
 		
 		binary = closing(binary, square(closing_size))
 		
-		print("Shape of blurred_image:", blurred_image.shape)
-		print("Shape of binary mask:", binary.shape)
-		
 		distance = ndimage.distance_transform_edt(binary)
 		
 		local_maxi = peak_local_max(distance, footprint=np.ones((3, 3)), labels=binary)
@@ -275,10 +271,7 @@ class ImageSegmenter:
 		
 		markers = np.zeros_like(distance, dtype=int)
 		markers[tuple(local_maxi.T)] = np.arange(1, len(local_maxi) + 1)
-		
-		print("Shape of distance transform:", distance.shape)
-		print("Shape of markers:", markers.shape)
-		print("Shape of binary mask (again):", binary.shape)
+
 		try:
 			labels = watershed(-distance, markers, mask=binary)
 			self.watershed_segments = labels
@@ -396,6 +389,9 @@ class ImageSegmenter:
 				
 				high_saturation_mask |= mask
 		
+
+		self.high_saturation_mask = high_saturation_mask
+		self.img = img
 		if visualize:
 			
 			visualization_img = img.copy()
@@ -413,6 +409,13 @@ class ImageSegmenter:
 		if visualize and total_field_area > 0:
 			print(crop_coverage)
 		return crop_coverage
+	
+	def get_visualized_crop_image(self):	
+		visualization_img = self.img.copy()
+		visualization_img[self.high_saturation_mask] = [0, 255, 0]  
+		plt.imshow(visualization_img)
+		plt.axis('off')  
+		plt.show()
 	def draw_detections(self, detections, image_path=None, draw_labels=True):
 		if image_path:
 			self.image_path = image_path
@@ -936,24 +939,74 @@ class ImageSegmenter:
   
 		self.load_and_predict_dino(image, text)
 		number_classes = self.segment_masks()
-		return f'There have been segmented a total of {number_classes} classes of {text} in the image.'
+
+		final_image = self.get_segmented_image()
+
+		# Save the final segmented image
+		segmented_image_path = image.replace(".jpg", "_segmented.jpg").replace(".png", "_segmented.png")
+		plt.imsave(segmented_image_path, final_image)
+
+		# Print the result to the console
+		print(f"Number of masks: {self.count_masks()}")
+
+		return f'There have been segmented a total of {number_classes} classes of "{text}" in the image.', segmented_image_path
 	
 	def segment_unique(self, image, text):
-		# Use previous unique segmentation
+		"""
+		Perform unique segmentation based on user feedback and save the segmented image.
+		
+		Args:
+			image (str): Path to the input image.
+			text (str): Text to guide segmentation.
+
+		Returns:
+			str: Message describing the segmentation result.
+			str: Path to the saved segmented image.
+		"""
 		self.load_and_predict_dino(image, text)
 		self.segment_first_mask_variations()
-		return f'The object {text} has been segmented in the image following user feedback.'
+		segmented_image_path = image.replace(".jpg", "_unique_segmented.jpg").replace(".png", "_unique_segmented.png")
+		segmented_image = self.get_segmented_image()
+		plt.imsave(segmented_image_path, segmented_image)
+		return f'The object "{text}" has been segmented in the image following user feedback.', segmented_image_path
+
 	
 	def change_color(self, image, color):
-		# Use previous functions to change the color of the image
+		"""
+		Change the color of the masks in the image and save the result.
+		
+		Args:
+			image (str): Path to the input image.
+			color (tuple): RGB color tuple to apply to the masks.
+
+		Returns:
+			str: Message describing the color change.
+			str: Path to the saved color-changed image.
+		"""
 		self.image = image
-		self.apply_masks_to_image(color)
-		return f'The color of the image has been changed to {color}.'
+		updated_image = self.apply_masks_to_image(color)
+		updated_image_path = image.replace(".jpg", "_color_changed.jpg").replace(".png", "_color_changed.png")
+		plt.imsave(updated_image_path, updated_image)
+		return f'The color of the image has been changed to {color}.', updated_image_path
+
 	
 	def calculate_crop_percentage(self, image):
-		# Use previous functions to calculate the crop percentage
-		percentage = self.analyze_crop_coverage(image, visualize=False)
-		return f'The crop percentage in the image is {percentage}.'
+		"""
+		Calculate the crop percentage of an image and save a visualization.
+		
+		Args:
+			image (str): Path to the input image.
+
+		Returns:
+			str: Message describing the crop percentage.
+			str: Path to the saved visualization of the crop analysis.
+		"""
+		percentage = self.analyze_crop_coverage(image, visualize=True)
+		crop_analysis_path = image.replace(".jpg", "_crop_analysis.jpg").replace(".png", "_crop_analysis.png")
+		crop_visualization = self.get_visualized_crop_image()
+		plt.imsave(crop_analysis_path, crop_visualization)
+		return f'The crop percentage in the image is {percentage}%.', crop_analysis_path
+
 
 
 
