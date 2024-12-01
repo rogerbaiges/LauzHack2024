@@ -50,13 +50,9 @@ class Controller:
 			})
 			self.num_actions += 1
 
-			self.message_buffer.append({
-				"role": "assistant",
-				"content": f"Task: {action_title}\nResult: {result}"
-			})
+			results_message = f"Task: {action_title}\nResult: {result}"
+			print(results_message)
 			
-
-
 		final_answer = self.execution_llm.ask(self.concatenate_execution_prompt("Now with all the information you must answer the question in order to achieve the GOAL.", goal, [action_titles[j]["result"] for j in range(self.num_actions)]))
 
 		return self.parse_final_answer(final_answer)
@@ -73,8 +69,7 @@ class Controller:
 		else:
 			return general_response[tasks_index + len(keyword):].strip()
 		
-	@staticmethod
-	def parse_function_call(execution_output: str) -> dict:
+	def parse_function_call(self, execution_output: str) -> dict:
 		function_name, arguments, answer = None, None, None
 
 		lines = execution_output.split("\n")
@@ -93,6 +88,9 @@ class Controller:
 
 			function_name = function_call[:open_parenthesis_index].strip()
 			arguments = function_call[open_parenthesis_index + 1:close_parenthesis_index].split(",")
+
+			if function_name not in self.function_mapping.keys():
+				function_name = None
 		
 		return {
 			"function_name": function_name,
