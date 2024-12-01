@@ -73,9 +73,9 @@ Answer: There are 10 tanks in the image, and 3 of them are under construction.
 1. [segment('text')]: Receives a text description of what to segment and returns the number of objects identified along with their segmented images.
 2. [calculate('text')]: This function realizes some mathematical or logic operations with the already known information. Please ask the question as if you don't know how to calculate it.
 3. [segment_unique('text')]: Receives a text description of a very specific object to segment. Presents potential segmentations to the user, allowing them to select the most accurate one. This function is ideal for precision tasks involving a single object.
-4. [count_people('image')]: Specifically designed to analyze an image of a crowd and return the number of people present. Optimized for handling large numbers of individuals.
-5. [change_color('segmentation', 'color')]: Changes the primary color of the mask for a segmented object. Useful for highlighting specific parts of the segmentation.
-6. [calculate_percentage('image', 'segmentation')]: Takes an image and its corresponding segmentation as inputs. Calculates and returns the percentage of the image area covered by the segmented objects.
+4. [count_people()]: Specifically designed to analyze an image of a crowd and return the number of people present. Optimized for handling large numbers of individuals.
+5. [change_color('color')]: Changes the primary color of the mask for a segmented object. Useful for highlighting specific parts of the segmentation. Just needs a color name.
+6. [calculate_crop_percentage()]: Takes the segmentation images of the land and then the crop part in order to calculate the percentage of crop land.
 
 ---
 

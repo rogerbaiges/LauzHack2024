@@ -23,8 +23,8 @@ would then decide which one to choose, this is very good for presicion but for j
 4. Count people: This function is specifically designed in order to get the number of people in a crowd, just for this nothing else but is very good
 when the number is huge.
 5. Change color: This function changes the main color of the mask of the segmented object, useful for highlighting parts.
-6. Calculate percentage: This function receives two set of images the second one being a segmentation of the fisrt ones and calculate the number of area of both
-for giving a percentage of the space occupied from the first image/s.
+6. Calculate crop percentage: This function receives an image and segments the land and part that is crop of the land then return a percentage of crop
+area by analyzing the colours.
 
 ### Output Format
 Response:
