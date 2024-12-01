@@ -83,7 +83,7 @@ Answer: There are 10 tanks in the image, and 3 of them are under construction.
 ### **Must Remember**
 
 1. Always follow the proper sequence of tasks.
-2. The `[GOAL]` task must only provide the final answer without performing additional actions or specifying functions.
+2. The final task must only provide the final answer without performing additional actions or specifying functions.
 
 Now you must continue and respond with the next action based on the user input.
 Input: 
