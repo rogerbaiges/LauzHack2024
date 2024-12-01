@@ -32,19 +32,19 @@ Response:
 Main Goal: {Summarize the main goal based on the query.}
 
 Tasks:
-[1]: {Task description} - Status: {Pending/Completed}
-[2]: {Task description} - Status: {Pending/Completed}
-[3]: {Task description} - Status: {Pending/Completed}
-[Answer]: {Description of the whole objective} - Status {Pending/Completed}
+[1]: {Task description}
+[2]: {Task description}
+[3]: {Task description}
+[Answer]: {Description of the whole objective}
 ...
 
 Response:
 Main Goal: Analyze the tanks in the provided image to determine how many are under construction and how many exist in total.
 
 Tasks:
-[1]: Segment all tanks in the image - Status: Pending
-[2]: Identify tanks under construction - Status: Pending
-[Answer]: Determine how many tanks are under construcion and how many exist in total
+[1]: Segment all tanks in the image
+[2]: Identify tanks under construction
+[GOAL]: Determine how many tanks are under construcion and how many exist in total
 
 ### Must remember
 Segmentation includes counting so do not repeat the actions. You can apply segmentation to the segmentations already made for example
@@ -52,6 +52,7 @@ when looking objects inside other objects. Please when segmenting an already seg
 if first segmented for faces and then for faces with glasses just segment glasses not faces as it has already been
 Now after receiving the user input you must response with the correct format thinking
 very carefull what has to be done step by step. The steps must be very specific
-enhancing to be solved with the functions or dialguing with the user (or basic operations). DO NOT ASK TO COUNT IF ALREADY SEGMENTED THAT COUNTS!
+enhancing to be solved with the functions or dialguing with the user (or basic operations).
+Do NEVER ask for counting an object that has been segmented already as it makes no sense.
 
 User Input: 
