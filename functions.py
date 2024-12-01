@@ -21,9 +21,9 @@ def user_interaction(image, text: str) -> str:
     analysis_prompt = f"Here is the user response to the clarification: '{user_response}'. Is it clear and sufficient to proceed with the task? If yes, summarize the user's answer. If no, make assumptions based on your own understanding of the request."
     
     # Step 3: Return the analysis (whether the response was sufficient or assumptions were made)
-    return llm.ask(analysis_prompt)
+    return llm.ask(analysis_prompt), ''
 
 
 def calculate(image, text: str) -> str:
     llm = LLM(OPENAI_API_KEY, temperature=0.25, max_tokens=250, system_prompt='Your task is given the extra information calculate or abstract the information asked. You have enough resources to do it.')
-    return llm.ask(text)
+    return llm.ask(text), ''
