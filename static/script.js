@@ -359,23 +359,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const reader = response.body.getReader();
             let decoder = new TextDecoder("utf-8");
             while (true) {
+                console.log("true")
                 const { done, value } = await reader.read();
                 if (done) break;
 
                 let chunk = decoder.decode(value);
+                console.log("chunk")
                 // Split the chunk into individual JSON objects (messages)
                 let messages = chunk.split('\n').filter(msg => msg.trim() !== ""); 
                 for (let message of messages) {
+                    console.log(message)
                     try {
                         let data = JSON.parse(message);
-                        if (data.sender === 'bot') {
+                        if (data.feedback_required) {
+                            handleFeedbackRequest(data.feedback_data);
+                        } else if (data.sender === 'bot') { // Normal bot message
                             displayChatMessage(data.message, data.sender, data.image_url);
-                        } else {
+                        } else { // Action message (includes segment_unique result later)
                             displayAction(data);
-                            console.log(data.mesage)
-                            console.log(data.image_url)
-                            addImageToTaskbar(data.image_url, 'action-border'); // Add image to taskbar
+                            if (data.image_url) {
+                                addImageToTaskbar(data.image_url, 'action-border');
+                            }
                         }
+
                     } catch (e) {
                     console.error("Could not parse JSON:", message, e); // Handle possible parsing errors
                   }
@@ -411,11 +417,48 @@ document.addEventListener('DOMContentLoaded', () => {
             // ... (Add click event for enlarged view as before if needed)
             messageDiv.appendChild(img);
         }
+        
 
         chatHistory.appendChild(messageDiv);
         chatHistory.scrollTop = chatHistory.scrollHeight; 
     }
     
+    function handleFeedbackRequest(feedbackData) {
+        feedbackModal.classList.remove('hidden');
+        feedbackImagesContainer.innerHTML = ''; // Clear existing images
+
+        feedbackData.images.forEach((imgData, index) => {
+            const img = document.createElement('img');
+            img.src = `data:image/jpeg;base64,${imgData}`;
+            img.alt = `Mask ${index + 1}`;
+            img.classList.add('feedback-image'); // Add class for styling
+            img.addEventListener('click', () => {
+                sendFeedback(index);
+            });
+            feedbackImagesContainer.appendChild(img);
+        });
+    }
+    async function sendFeedback(selectedMaskIndex) {
+        // Send the index of the selected mask
+         try {
+             const response = await fetch('/process', { // Same route as your main processing
+                 method: 'POST',  // Or PUT/PATCH depending on your server logic
+                 headers: {
+                     'Content-Type': 'application/json' 
+                 },
+                 body: JSON.stringify({ selected_mask_index: selectedMaskIndex })
+             });
+     
+             if (!response.ok) {
+                 throw new Error(`HTTP error ${response.status}`);
+             }
+         } catch (error) {
+             console.error("Error sending feedback:", error);
+             // Handle error (e.g., display an error message)
+         }
+         feedbackModal.classList.add('hidden'); // Hide the modal after selection
+     }
+
 
     async function resetConversation() {
         try {

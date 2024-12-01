@@ -950,24 +950,6 @@ class ImageSegmenter:
 
 		return f'There have been segmented a total of {self.count_masks()} classes of "{text}" in the image.', segmented_image_path
 	
-	def segment_unique(self, image, text):
-		"""
-		Perform unique segmentation based on user feedback and save the segmented image.
-		
-		Args:
-			image (str): Path to the input image.
-			text (str): Text to guide segmentation.
-
-		Returns:
-			str: Message describing the segmentation result.
-			str: Path to the saved segmented image.
-		"""
-		self.load_and_predict_dino(image, text)
-		self.segment_first_mask_variations()
-		segmented_image_path = image.replace(".jpg", "_unique_segmented.jpg").replace(".png", "_unique_segmented.png")
-		segmented_image = self.get_segmented_image()
-		plt.imsave(segmented_image_path, segmented_image)
-		return f'The object "{text}" has been segmented in the image following user feedback.', segmented_image_path
 
 	
 	def change_color(self, image, color):
@@ -982,10 +964,11 @@ class ImageSegmenter:
 			str: Message describing the color change.
 			str: Path to the saved color-changed image.
 		"""
+		print("Changing color to: ", color)
 		color_RGB = {'red': (255, 0, 0), 'green': (0, 255, 0), 'blue': (0, 0, 255), 'yellow': (255, 255, 0), 'purple': (128, 0, 128), 'cyan': (0, 255, 255), 'white': (255, 255, 255), 'black': (0, 0, 0), 'orange': (255, 165, 0), 'pink': (255, 192, 203), 'brown': (165, 42, 42), 'gray': (128, 128, 128), 'lime': (0, 255, 0), 'maroon': (128, 0, 0), 'navy': (0, 0, 128), 'olive': (128, 128, 0), 'silver': (192, 192, 192), 'teal': (0, 128, 128)}	
 		if isinstance(color, str):
-			color = color_RGB.get(color.lower(), (255, 0, 0))
-		self.image = image
+			color = color_RGB.get(color.lower().replace("'",""), (255, 0, 0))
+		#self.image = image
 		updated_image = self.apply_masks_to_image(color)
 		updated_image_path = image.replace(".jpg", "_color_changed.jpg").replace(".png", "_color_changed.png")
 		plt.imsave(updated_image_path, updated_image)
@@ -1023,6 +1006,63 @@ class ImageSegmenter:
 		count = self.count_people(image)
 		
 		return f'The crowd count in the image is {count}.', ''
+	
+	def segment_unique(self, image, text):
+		print(image, text)
+		self.load_and_predict_dino(image, text)
+		segmented_images = self.segment_first_mask_variations() # Modified to return segmentation variations
+		return f'Please select a segmentation mask', segmented_images # return the list of images
+
+
+
+
+	def segment_first_mask_variations(self):
+		"""
+		Generate and return multiple segmentation variations.
+		"""
+
+		image = Image.open(self.image_path).convert("RGB")
+		image = np.array(image)
+		self.image = image
+		self.sam_predictor.set_image(image)
+		print(self.xyxy_boxes)
+		box = self.xyxy_boxes[0]
+		x_min, y_min, x_max, y_max = box
+		input_box = np.array([x_min, y_min, x_max, y_max])
+		masks, _, _ = self.sam_predictor.predict(
+			point_coords=None,
+			point_labels=None,
+			box=input_box[None, :],
+			multimask_output=True,
+		)
+		
+		segmented_images = []
+		for mask in masks:
+			segmented_image = self.get_segmented_image2(mask=mask) # Modify to use the current mask
+			segmented_images.append(segmented_image)
+
+		print(segmented_images)
+
+		return segmented_images # Return the images
+
+
+
+	def get_segmented_image2(self, mask=None):
+		"""
+		Get the segmented image with the provided mask.
+		"""
+		if mask is None: # Default behavior if no mask provided
+			mask = self.mask_image
+		else:
+			self.mask_image = mask
+		image = Image.open(self.image_path).convert("RGB")
+		image_np = np.array(image)
+		segmented_image = np.zeros_like(image_np)
+		for i in range(3):  # For each RGB channel
+			segmented_image[:, :, i] = image_np[:, :, i] * self.mask_image
+		segmented_image = Image.fromarray(segmented_image.astype('uint8'))  # Convert to Pillow image
+
+		return segmented_image
 
 
 
@@ -1053,10 +1093,10 @@ if __name__ == "__main__":
 	print(f"Number of people detected: {people_count}")
 	"""
 
-	text = segmenter.transcribe_text_from_image("./best_summer_ever.png")
+	text = segmenter.transcribe_text_from_image("./Images/best_summer_ever.png")
 	print(text)
-	"""
-	boxes = segmenter.load_and_predict_dino("gauge.png", "gauge.")
+	
+	boxes = segmenter.load_and_predict_dino("Images/gauge.png", "gauge.")
 	masks = segmenter.segment_masks()
 	final_image = segmenter.apply_masks_to_image(color=(255, 0, 0))
 	plt.imshow(final_image)
@@ -1064,7 +1104,7 @@ if __name__ == "__main__":
 	plt.show()
 	print(f"Number of masks: {segmenter.count_masks()}")
 	segmenter.segment_first_mask_variations()
-	"""
+
 
 	"""
 	reference_image_path = "reference.png"
