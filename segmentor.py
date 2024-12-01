@@ -949,7 +949,7 @@ class ImageSegmenter:
 		# Print the result to the console
 		print(f"Number of masks: {self.count_masks()}")
 
-		return f'There have been segmented a total of {number_classes} classes of "{text}" in the image.', segmented_image_path
+		return f'There have been segmented a total of {self.count_masks()} classes of "{text}" in the image.', segmented_image_path
 	
 	def segment_unique(self, image, text):
 		"""
