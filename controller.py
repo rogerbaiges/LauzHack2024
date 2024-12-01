@@ -133,7 +133,7 @@ class Controller:
 		if final_answer_index == -1:
 			return execution_output
 		else:
-			return execution_output[final_answer_index:].strip()
+			return execution_output[final_answer_index + len("Final Answer:"):].strip()
 
 	@staticmethod
 	def split_general_actions(general_response: str) -> tuple:
@@ -157,4 +157,3 @@ class Controller:
 			return self.function_mapping[function_call["function_name"]](image_path, *function_call["arguments"])
 		else:
 			raise Exception(f"Function {function_call['function_name']} not found.")
-
