@@ -1,14 +1,14 @@
 import openai
 
 class LLM:
-	def __init__(self, api_key: str, model: str = "gpt-4o-mini", temperature: float = 0.7, 
+	def __init__(self, api_key: str, model: str = "gpt-4o-latest", temperature: float = 0.7, 
 				 max_tokens: int = 100, system_prompt: str | None = None) -> None:
 		"""
 		Initializes the LLM class with configuration for OpenAI API.
 
 		Args:
 			api_key (str): OpenAI API key.
-			model (str): The model to use (default is "gpt-4-mini").
+			model (str): The model to use (default is "gpt-4-latest").
 			temperature (float): Controls the creativity of the responses.
 			max_tokens (int): Maximum number of tokens for the generated response.
 			system_prompt (str): A prompt to define the LLM's behavior.
