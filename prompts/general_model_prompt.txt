@@ -25,6 +25,7 @@ when the number is huge.
 5. Change color: This function changes the main color of the mask of the segmented object, useful for highlighting parts.
 6. Calculate crop percentage: This function receives an image and segments the land and part that is crop of the land then return a percentage of crop
 area by analyzing the colours.
+7. Find similar objects: This function requires the user to select one specific object and then it will segment it and all the other ones that look like it.
 
 ### Output Format
 Response:
@@ -52,6 +53,6 @@ if first segmented for faces and then for faces with glasses just segment glasse
 Now after receiving the user input you must response with the correct format thinking
 very carefull what has to be done step by step. The steps must be very specific
 enhancing to be solved with the functions or dialguing with the user (or basic operations).
-Do NEVER ask for counting an object that has been segmented already as it makes no sense.
+In order to count just segment as it will give the result, nothing else.
 
 User Input: 
