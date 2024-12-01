@@ -20,7 +20,7 @@ class Controller:
 		import os
 		current_dir = os.getcwd()
 		print(current_dir)
-		sys.path.append(os.path.abspath(os.path.join(current_dir, './samsam/')))
+		sys.path.append(os.path.abspath(os.path.join(current_dir, '/samsam/')))
 		from sam2.build_sam import build_sam2
 		from sam2.sam2_image_predictor import SAM2ImagePredictor
 		import numpy as np
@@ -63,7 +63,7 @@ class Controller:
 		goal, action_titles = self.split_general_actions(filtered_general_response)
 
 		for i, action_title in enumerate(action_titles):
-			execution_response = self.execution_llm.ask(self.concatenate_execution_prompt(action_title, goal, [action_titles[j]["result"] for j in range(i)]))
+			execution_response = self.execution_llm.ask(self.concatenate_execution_prompt(action_title, goal, [self.actions[j]["result"] for j in range(i)]))
 			function_call_string = self.parse_function_call(execution_response)
 			print(function_call_string)
 			result = self.execute_function(function_call_string, image_path)
@@ -79,7 +79,7 @@ class Controller:
 			results_message = f"Task: {action_title}\nResult: {result}"
 			print(results_message)
 			
-		final_answer = self.execution_llm.ask(self.concatenate_execution_prompt("Now with all the information you must answer the question in order to achieve the GOAL.", goal, [action_titles[j]["result"] for j in range(self.num_actions)]))
+		final_answer = self.execution_llm.ask(self.concatenate_execution_prompt("Now with all the information you must answer the question in order to achieve the GOAL.", goal, [self.actions[j]["result"] for j in range(self.num_actions)]))
 
 		return self.parse_final_answer(final_answer)
 	

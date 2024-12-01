@@ -23,6 +23,20 @@ from scipy import ndimage
 from skimage import measure
 from sklearn.cluster import KMeans
 
+
+sys.path.append(os.path.abspath(os.path.join(current_dir, './samsam/')))
+from sam2.build_sam import build_sam2
+from sam2.sam2_image_predictor import SAM2ImagePredictor
+import numpy as np
+import torch
+import cv2
+from PIL import Image
+import matplotlib.pyplot as plt
+from hydra import initialize_config_module
+from hydra.core.global_hydra import GlobalHydra
+if not GlobalHydra.instance().is_initialized():
+	initialize_config_module("samsam/sam2", version_base="1.2")
+
 class ImageSegmenter:
 	def __init__(self, grounding_dino_cfg, grounding_dino_weights, sam_cfg, sam_weights, device="cuda"):
 		self.device = device if torch.cuda.is_available() else "cpu"
