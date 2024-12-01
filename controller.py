@@ -15,14 +15,39 @@ class Controller:
 		self.general_base_prompt_file = open(general_base_prompt_file, "r").read()
 		self.execution_base_prompt = open(execution_base_prompt_file, "r").read()
 
+
+		import sys
+		import os
+		current_dir = os.getcwd()
+		print(current_dir)
+		sys.path.append(os.path.abspath(os.path.join(current_dir, './samsam/')))
+		from sam2.build_sam import build_sam2
+		from sam2.sam2_image_predictor import SAM2ImagePredictor
+		import numpy as np
+		import torch
+		import cv2
+		from PIL import Image
+		import matplotlib.pyplot as plt
+		from hydra import initialize_config_module
+		from hydra.core.global_hydra import GlobalHydra
+		if not GlobalHydra.instance().is_initialized():
+			initialize_config_module("samsam/sam2", version_base="1.2")
+
+
+		self.segmenter = ImageSegmenter(
+			grounding_dino_cfg="GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py",
+			grounding_dino_weights="GroundingDINO/weights/groundingdino_swint_ogc.pth",
+			sam_cfg="C:/Users/Usuario/Documents/Projectes/LauzHack2024/LauzHack2024/samsam/sam2/configs/sam2.1/sam2.1_hiera_t.yaml",
+			sam_weights="C:/Users/Usuario/Documents/Projectes/LauzHack2024/LauzHack2024/samsam/weights/sam2.1_hiera_tiny.pt"
+		)
 		self.function_mapping = {
-			"segment": ImageSegmenter.segment,
+			"segment": self.segmenter.segment,
 			"user_interaction": user_interaction,
 			"calculate": calculate,
-			"segment_unique": ImageSegmenter.segment_unique,
-			"count_people": ImageSegmenter.count_people,
-			"change_color": ImageSegmenter.change_color,
-			"calculate_crop_percentage": ImageSegmenter.calculate_crop_percentage
+			"segment_unique": self.segmenter.segment_unique,
+			"count_people": self.segmenter.count_people,
+			"change_color": self.segmenter.change_color,
+			"calculate_crop_percentage": self.segmenter.calculate_crop_percentage
 		}
 
 		self.actions: list[dict] = [] # Contains dictionaries with the title, function_name, arguments and result of each action
@@ -40,6 +65,7 @@ class Controller:
 		for i, action_title in enumerate(action_titles):
 			execution_response = self.execution_llm.ask(self.concatenate_execution_prompt(action_title, goal, [action_titles[j]["result"] for j in range(i)]))
 			function_call_string = self.parse_function_call(execution_response)
+			print(function_call_string)
 			result = self.execute_function(function_call_string, image_path)
 			self.actions.append({
 				"title": action_title,
@@ -74,6 +100,7 @@ class Controller:
 
 		lines = execution_output.split("\n")
 
+		lines = [line for line in lines if line.strip()]
 		answer_line = lines[0]
 		answer = answer_line[answer_line.find("Answer:") + len("Answer:"):].strip()
 
@@ -111,7 +138,7 @@ class Controller:
 	@staticmethod
 	def split_general_actions(general_response: str) -> tuple:
 		# Get all the lines that have a [ ] in them
-		action_titles = [line[line.find("]") + 1:line.find("]")].strip() for line in general_response.split("\n") if re.search(r"\[.*\]", line)]
+		action_titles = [line[line.find("]:") + 1:].strip() for line in general_response.split("\n") if re.search(r"\[.*\]", line)]
 		goal = action_titles[0]
 		action_titles = action_titles[1:]
 
@@ -127,7 +154,7 @@ class Controller:
 	def execute_function(self, function_call: dict, image_path: str) -> str:
 		# Execute the function and return the result
 		if function_call["function_name"] in self.function_mapping:
-			return self.function_mapping[function_call["function_name"]](*function_call["arguments"], image_path)
+			return self.function_mapping[function_call["function_name"]](image_path, *function_call["arguments"])
 		else:
 			raise Exception(f"Function {function_call['function_name']} not found.")
 
