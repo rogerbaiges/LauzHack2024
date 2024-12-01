@@ -1023,22 +1023,22 @@ class ImageSegmenter:
 		
 		return f'The crowd count in the image is {count}.', ''
 	
-	def find_similar_objects(self, image):
-		image = cv2.imread(image)
+	def find_similar_objects(self, image_path):
+		image = cv2.imread(image_path)
 		click_point = self.get_user_click(image)
 		if click_point is None:
 			print("No click received. Exiting.")
 			sys.exit()
 
 		mask = self.extract_mask_with_sam2(image, click_point)
-		tolerance = 5  # Adjust as needed.
+		tolerance = 2.5  # Adjust as needed.
 		similar_regions = self.find_similar_features_in_image(image, mask, tolerance)
 
 		if similar_regions:
 			print("Similar features found:")
 			for x, y, w, h, _ in similar_regions:
 				cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-			output_image_path = image.replace(".jpg", "_similar_features.jpg").replace(".png", "_similar_features.png")
+			output_image_path = image_path.replace(".jpg", "_similar_features.jpg").replace(".png", "_similar_features.png")
 			cv2.imwrite(output_image_path, image)
 		else:
 			print("No similar features found.")
