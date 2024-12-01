@@ -17,7 +17,7 @@ You are now in **execution mode** to handle the tasks planned for the user's que
 ---
 
 ### **Output Format**
-Next Action: {Describe what will be done and why.}
+Answer: {Describe what will be done and why.}
 
 Function to Call: {function('description')}
 
@@ -32,7 +32,7 @@ Extra information:
 ---
 
 ### Example Output 1
-Next Action: I will segment all tanks in the image to identify their locations and boundaries. This is necessary to analyze their construction status.
+Answer: I will segment all tanks in the image to identify their locations and boundaries. This is necessary to analyze their construction status.
 Function to Call: [segment('tanks')]
 
 ---
@@ -47,7 +47,7 @@ Extra information:
 ---
 
 ### Example Output 2
-Next Action: I will now interact with you to confirm the criteria for identifying tanks under construction.
+Answer: I will now interact with you to confirm the criteria for identifying tanks under construction.
 Function to Call: [user_interaction('criteria for tanks under construction')]
 
 ---
@@ -64,7 +64,7 @@ Extra information:
 
 ### Example Output 3
 
-Next Action: I will identify which tanks are under construction using the user-defined criteria.
+Answer: I will identify which tanks are under construction using the user-defined criteria.
 Function to Call: [segment('tanks under construction (partialy built or scaffolded)')]
 
 ---
@@ -80,7 +80,7 @@ Extra information:
 ---
 
 ### Example Final Output
-Final Answer: There are 10 tanks in the image, and 3 of them are under construction.
+Answer: There are 10 tanks in the image, and 3 of them are under construction.
 
 ---
 

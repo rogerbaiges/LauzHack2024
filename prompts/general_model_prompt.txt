@@ -42,9 +42,9 @@ Response:
 Main Goal: Analyze the tanks in the provided image to determine how many are under construction and how many exist in total.
 
 Tasks:
+[GOAL]: Determine how many tanks are under construcion and how many exist in total
 [1]: Segment all tanks in the image
 [2]: Identify tanks under construction
-[GOAL]: Determine how many tanks are under construcion and how many exist in total
 
 ### Must remember
 Segmentation includes counting so do not repeat the actions. You can apply segmentation to the segmentations already made for example
