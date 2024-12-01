@@ -22,6 +22,7 @@ from skimage.color import rgb2hsv
 from scipy import ndimage
 from skimage import measure
 from sklearn.cluster import KMeans
+
 class ImageSegmenter:
     def __init__(self, grounding_dino_cfg, grounding_dino_weights, sam_cfg, sam_weights, device="cuda"):
         self.device = device if torch.cuda.is_available() else "cpu"
@@ -373,9 +374,6 @@ class ImageSegmenter:
             mask = segments == field['label']
             segment_color_hsv = rgb2hsv(np.uint8([[crop_color]]))[0, 0] 
             average_segment_color_hsv = np.mean(rgb2hsv(img[mask]), axis=0) 
-            print(average_segment_color_hsv)
-            print(segment_color_hsv)
-            print("---")
             total_field_area += np.sum(mask)
             if np.linalg.norm(average_segment_color_hsv - segment_color_hsv) < 0.3: 
                 
@@ -522,6 +520,139 @@ class ImageSegmenter:
                     found_images.append(image_path)
                     break  
         return found_images
+    
+
+
+    def get_user_click(self, image):
+        """Gets the coordinates of a user's click on an image."""
+
+        fig, ax = plt.subplots()
+        ax.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)) # Convert to RGB for matplotlib
+
+        click_coordinates = []
+
+        def onclick(event):
+            click_coordinates.append((int(event.xdata), int(event.ydata)))
+            plt.close() # Close the plot after the click
+
+        fig.canvas.mpl_connect('button_press_event', onclick)
+        plt.show()
+
+        return click_coordinates[0] if click_coordinates else None
+    def extract_mask_with_sam2(self, image, click_point):
+        """Extracts a mask using SAM2 based on the user's click."""
+
+        sam2 = self.sam_model
+        predictor = self.sam_predictor
+        predictor.set_image(image) 
+        masks, _, _ = predictor.predict(
+            point_coords=np.array([click_point]),  # Click coordinates as a NumPy array
+            point_labels=np.array([1]),              # Positive label (1 for foreground)
+            multimask_output=False,
+        )
+
+
+        plt.imshow(masks[0])
+        plt.title("Extracted Mask")
+        plt.show()
+
+        return masks[0]
+    
+    def find_similar_features_in_image(self, image, mask, size_tolerance=0.8, rotation_tolerance=90):
+        """Finds similar features in the SAME image based on the provided mask."""
+
+        mask = mask.astype(np.uint8) * 255  # Convert to 8-bit
+
+        # Get the bounding box of the template feature from the mask
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        tx, ty, tw, th = cv2.boundingRect(contours[0])
+        template = image[ty:ty+th, tx:tx+tw] # Extract template from image
+
+        matched_regions = []
+
+        for scale in np.linspace(0.9, 1.10, 10):  # Scale to handle size variations
+            resized_template = cv2.resize(template, None, fx=scale, fy=scale)
+            
+            for angle in range(0, rotation_tolerance + 1, 30): # Steps of 10 degrees
+                rows, cols = resized_template.shape[:2]
+                rotation_matrix = cv2.getRotationMatrix2D((cols / 2, rows / 2), angle, 1)
+                rotated_template = cv2.warpAffine(resized_template, rotation_matrix, (cols, rows))
+
+
+                result = cv2.matchTemplate(image, rotated_template, cv2.TM_CCOEFF_NORMED)
+                threshold = 0.85 # Adjust as needed
+                loc = np.where( result >= threshold)
+
+                for pt in zip(*loc[::-1]):
+                    w, h = rotated_template.shape[1], rotated_template.shape[0]  # Use rotated template size.
+                    if abs(w - tw) <= size_tolerance and abs(h - th) <= size_tolerance  and (pt[0] != tx or pt[1] != ty): 
+                        matched_regions.append((pt[0], pt[1], w, h, angle)) # Store angle too
+
+        return matched_regions
+    
+    def find_from_click(self, image_path):
+        image = cv2.imread(image_path)
+        click_point = self.get_user_click(image)
+        if click_point is None:
+            print("No click received. Exiting.")
+            sys.exit()
+
+        mask = self.extract_mask_with_sam2(image, click_point)
+        tolerance = 5 # Adjust as needed.
+        similar_regions = self.find_similar_features_in_image(image, mask, tolerance)
+
+        if similar_regions:
+            print("Similar features found:")
+            for x, y, w, h, _ in similar_regions:
+                cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.imshow("Detected Features", image)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+        else:
+            print("No similar features found.")
+
+    def remove_from_click(self, image_path):
+        image = cv2.imread(image_path)
+        click_point = self.get_user_click(image)
+        if click_point is None:
+            print("No click received. Exiting.")
+            sys.exit()
+
+        mask = self.extract_mask_with_sam2(image, click_point)
+
+        inpainted_image = self.remove_and_inpaint_cv2(image.copy(), mask)
+
+
+
+        # --- Visualization ---
+        plt.figure(figsize=(10, 5))
+        plt.subplot(1, 2, 1)
+        plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)) #Original image
+        plt.title("Original Image with Mask")
+        plt.subplot(1, 2, 2)
+        plt.imshow(cv2.cvtColor(inpainted_image, cv2.COLOR_BGR2RGB))
+        plt.title("Inpainted Image")
+        plt.show()
+
+
+
+
+    def remove_and_inpaint_cv2(self, image, mask):
+        """Removes the masked region and inpaints it using OpenCV's inpainting methods."""
+
+        mask = mask.astype(np.uint8) * 255  # Ensure mask is 8-bit
+        image = image.astype(np.uint8)  # Image should also be 8-bit
+
+        # OpenCV inpainting (choose one of the methods below)
+        inpainted_image = cv2.inpaint(image, mask, inpaintRadius=0.5, flags=cv2.INPAINT_TELEA) # Telea
+        # or
+        # inpainted_image = cv2.inpaint(image, mask, inpaintRadius=3, flags=cv2.INPAINT_NS)  # Navier-Stokes
+
+
+        return inpainted_image
+
+
+
 if __name__ == "__main__":
     
     sys.path.append(os.path.abspath(os.path.join(current_dir, './samsam/')))
@@ -606,9 +737,12 @@ if __name__ == "__main__":
     segmenter.detect_objects_yolo(model_path="yolo11n.pt")
     detections_2 = segmenter.detect_objects_yolo(conf_threshold = 0.3)
     segmenter.draw_detections(detections_2)
-    """
+    
     image_path = "crops2.png"  
     crop_coverage = segmenter.analyze_crop_coverage(image_path)
     print(f"Estimated crop coverage: {crop_coverage:.2f}%")
     
     palette = segmenter.create_palette("faces/cai3.jpg", num_colors=5, display=True)
+    """
+    image_path ="faces/cai.jpg"
+    segmenter.remove_from_click(image_path)
