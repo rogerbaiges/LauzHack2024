@@ -155,6 +155,9 @@ class Controller:
 	def execute_function(self, function_call: dict, image_path: str) -> str:
 		# Execute the function and return the result
 		if function_call["function_name"] in self.function_mapping:
-			return self.function_mapping[function_call["function_name"]](image_path, *function_call["arguments"])
+			if any(arg for arg in function_call["arguments"]):
+				return self.function_mapping[function_call["function_name"]](image_path, *function_call["arguments"])
+			else:
+				return self.function_mapping[function_call["function_name"]](image_path)
 		else:
 			raise Exception(f"Function {function_call['function_name']} not found.")
