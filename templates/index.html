@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual LLM Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <div class="container">
+        <!-- Left Side (Chat & Upload) -->
+        <div class="left-panel">
+            <div class="chat-container">
+                <div id="chat-history" class="chat-history">
+                    <!-- Chat messages will appear here -->
+                </div>
+                <div class="input-container">
+                    <input type="text" id="user-input" placeholder="Type your message or command...">
+                    <button id="send-button" class="btn"><i class="fas fa-paper-plane"></i></button>
+                    <button id="reset-button" class="btn reset"><i class="fas fa-redo"></i></button>
+                    <input type="file" id="image-input" multiple accept="image/*" style="display: none;">
+                    <button id="upload-button" class="btn"><i class="fas fa-upload"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side (Image View & Tasks) -->
+        <div class="right-panel">
+             <div class="image-taskbar">
+                </div>
+            <div class="image-viewer">
+                <div class="main-image-container">
+                    <img id="main-image" src="" alt="Main Image" style="display:none;"> <div id="image-placeholder">Upload an image to get started</div>  </div>
+                    <div id="image-editor" class="image-editor hidden">
+                        <canvas id="image-canvas"></canvas>
+                        <div class="editor-tools">
+                            <button id="draw-mask-button" class="btn" data-tool="mask"><i class="fas fa-paint-brush"></i> Mask</button>
+                            <button id="add-point-button" class="btn" data-tool="point"><i class="fas fa-map-marker-alt"></i> Point</button>
+                             <button id="save-edit-button" class="btn"><i class="fas fa-save"></i> Save</button>
+                            <button id="close-editor-button" class="btn cancel"><i class="fas fa-times"></i> Close</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal (similar to your popup) -->
+        <div id="feedback-modal" class="feedback-modal hidden">
+            <div class="feedback-content">
+            <div id="feedback-images" class = "feedback-images"> </div>
+              <p id="feedback-question">LLM Feedback Request:</p>
+              <div class="feedback-buttons">
+                <button id="feedback-confirm" class="btn"><i class="fas fa-check"></i> Confirm</button>
+                <button id="feedback-reject" class="btn cancel"><i class="fas fa-times"></i> Reject</button>
+              </div>
+            </div>
+          </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

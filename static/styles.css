@@ -1,0 +1,293 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    display: flex;
+    height: 100vh;
+    overflow-x:hidden;
+}
+
+.container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+/* Left Panel (Chat & Upload) */
+.left-panel {
+    width: 40%;
+    height: 100%;
+    background-color: #fff;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Push input to bottom */
+    height: 100%; /* Ensure it takes up full height of left panel */
+    padding: 20px;
+
+}
+
+.chat-history {
+    flex-grow: 1; /* Allow chat history to expand */
+    overflow-y: auto;
+}
+
+.chat-message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+.chat-message-content {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 70%;
+}
+.chat-message-image {
+        max-width: 200px; /* Adjust as needed */
+        max-height: 200px;
+        margin-top: 5px;
+        cursor: pointer;
+    }
+.chat-message.user {
+    align-self: flex-end;
+}
+.chat-message.user .chat-message-content {
+    background-color: #e0f2f7;
+}
+
+
+
+.chat-message.llm {
+    align-self: flex-start;
+}
+
+.main-image-container img.loading {
+    filter: blur(5px); /* Blur the image while loading */
+}
+
+.chat-message.llm .model-output {
+    background-color: #e9f5e7; /* Light green */
+    border: 1px solid #c5e1a5;
+    padding: 10px;
+    border-radius: 5px;
+    white-space: pre-wrap; /* Handle long text nicely */
+}
+
+.chat-message.llm .chat-message-content {
+    background-color: #f0f0f0;
+}
+.input-container {
+    display: flex;
+    align-items: center;
+    border-top: 1px solid #ddd;
+    padding-top: 15px;
+}
+
+.input-container input[type="text"] {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-right: 10px;
+}
+
+.btn {
+    background-color: #5cb85c; /* Green */
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.btn.reset, .btn.cancel {
+    background-color: #d9534f; /* Red */
+}
+/* Right Panel (Image View & Tasks) */
+.right-panel {
+    flex-grow: 1; /* Take remaining space */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow-x: auto;
+
+}
+.image-taskbar {
+    background-color: #eee;
+    padding: 10px;
+    display: flex;
+    overflow-x: scroll; /* Allow scrolling if many images */
+    border-bottom: 1px solid #ddd;
+}
+.taskbar-item {
+    width: 80px;
+    height: 60px;
+    margin: 5px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    position: relative;
+     overflow: hidden; /* Hide overflowing parts of the image */
+}
+.taskbar-item img {
+    width: 100%;
+    height: 100%;
+ /* Cover the container, maintaining aspect ratio */
+     display: block;
+}
+.taskbar-item.selected {
+    border-color: #5cb85c; /* Highlight selected item */
+}
+.taskbar-item .close-button {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+.image-viewer {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding: 20px;
+    position: relative;
+}
+
+.main-image-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;  /* Center placeholder text */
+    flex-direction: column;
+}
+.main-image-container img {
+    max-width: 80%;
+    max-height: 80%;
+    cursor: pointer;
+    display: block;
+    margin: 0 auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.main-image-container.fullscreen img {
+        max-width: 100%;
+        max-height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 101; /* Above the editor if open */
+    }
+
+#image-placeholder {
+        font-size: 20px;
+        color: #999; /* A light gray color */
+        text-align: center;
+    }
+
+.image-editor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-editor canvas {
+    max-width: 80%;
+    max-height: 80%;
+    border: 1px solid #ddd;
+}
+
+.editor-tools {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.editor-tools .btn {
+    margin: 0 10px;
+}
+.hidden {
+    display: none;
+}
+/* Fullscreen image/canvas would need adjustments depending on implementation */
+
+/* Feedback Modal */
+.feedback-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it's on top */
+}
+
+.feedback-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    text-align: center;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+}
+.feedback-images {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+.feedback-image-container {
+    width: 150px;
+    height: 100px;
+    margin: 10px;
+    border: 1px solid #ddd;
+    overflow: hidden;
+    position: relative;
+}
+.feedback-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.feedback-image-container .feedback-image-label {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        color: white;
+        padding: 5px;
+        font-size: 12px;
+        text-align: center;
+    }
+.feedback-buttons {
+    margin-top: 20px;
+}
