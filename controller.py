@@ -34,19 +34,19 @@ class Controller:
 			initialize_config_module("samsam/sam2", version_base="1.2")
 
 
-		self.segmenter = ImageSegmenter(
-			grounding_dino_cfg="GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py",
-			grounding_dino_weights="GroundingDINO/weights/groundingdino_swint_ogc.pth",
-			sam_cfg="C:/Users/Usuario/Documents/Projectes/LauzHack2024/LauzHack2024/samsam/sam2/configs/sam2.1/sam2.1_hiera_t.yaml",
-			sam_weights="C:/Users/Usuario/Documents/Projectes/LauzHack2024/LauzHack2024/samsam/weights/sam2.1_hiera_tiny.pt"
-		)
-
 		# self.segmenter = ImageSegmenter(
 		# 	grounding_dino_cfg="GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py",
 		# 	grounding_dino_weights="GroundingDINO/weights/groundingdino_swint_ogc.pth",
-		# 	sam_cfg="C:/Users/Cai Selvas Sala/GIA_UPC/Personal/LauzHack/LauzHack_2024/LauzHack2024/samsam/sam2/configs/sam2.1/sam2.1_hiera_t.yaml",
-		# 	sam_weights="C:/Users/Cai Selvas Sala/GIA_UPC/Personal/LauzHack/LauzHack_2024/LauzHack2024/samsam/weights/sam2.1_hiera_tiny.pt"
+		# 	sam_cfg="C:/Users/Usuario/Documents/Projectes/LauzHack2024/LauzHack2024/samsam/sam2/configs/sam2.1/sam2.1_hiera_t.yaml",
+		# 	sam_weights="C:/Users/Usuario/Documents/Projectes/LauzHack2024/LauzHack2024/samsam/weights/sam2.1_hiera_tiny.pt"
 		# )
+
+		self.segmenter = ImageSegmenter(
+			grounding_dino_cfg="GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py",
+			grounding_dino_weights="GroundingDINO/weights/groundingdino_swint_ogc.pth",
+			sam_cfg="C:/Users/Cai Selvas Sala/GIA_UPC/Personal/LauzHack/LauzHack_2024/LauzHack2024/samsam/sam2/configs/sam2.1/sam2.1_hiera_t.yaml",
+			sam_weights="C:/Users/Cai Selvas Sala/GIA_UPC/Personal/LauzHack/LauzHack_2024/LauzHack2024/samsam/weights/sam2.1_hiera_tiny.pt"
+		)
 		self.function_mapping = {
 			"segment": self.segmenter.segment,
 			"calculate": calculate,
@@ -88,7 +88,10 @@ class Controller:
 			
 		final_answer = self.execution_llm.ask(self.concatenate_execution_prompt("Now with all the information you must answer the question in order to achieve the GOAL.", goal, [self.actions[j]["result"] for j in range(self.num_actions)]))
 
-		return self.parse_final_answer(final_answer)
+		# return self.parse_final_answer(final_answer)
+		dictionary = self.parse_function_call(final_answer)
+		
+		return dictionary["answer"]
 	
 	@staticmethod
 	def filter_general_response(general_response: str) -> str:
@@ -105,15 +108,20 @@ class Controller:
 	def parse_function_call(self, execution_output: str) -> dict:
 		function_name, arguments, answer = None, None, None
 
-		lines = execution_output.split("\n")
+		function_to_call_index = execution_output.lower().find("function to call:")
+		answer_index = execution_output.lower().find("answer:")
 
-		lines = [line for line in lines if line.strip()]
-		answer_line = lines[0]
-		answer = answer_line[answer_line.find("Answer:") + len("Answer:"):].strip()
+		if (function_to_call_index == -1) and (answer_index == -1):
+			return {
+				"function_name": function_name,
+				"arguments": arguments,
+				"answer": answer
+			}
 
-		if len(lines) > 1:
-			function_call_line = lines[1]
+		answer = execution_output[answer_index + 1: function_to_call_index].strip()
 
+		if function_to_call_index != -1:
+			function_call_line = execution_output[function_to_call_index + len("Function to call:"):].strip()
 			open_bracket_index = function_call_line.find("[")
 			close_bracket_index = function_call_line.find("]")
 			function_call = function_call_line[open_bracket_index + 1:close_bracket_index].strip()
@@ -125,6 +133,8 @@ class Controller:
 
 			if function_name not in self.function_mapping.keys():
 				function_name = None
+
+		print(f"Function name: {function_name}, Arguments: {arguments}, Answer: {answer}")
 		
 		return {
 			"function_name": function_name,
@@ -135,12 +145,12 @@ class Controller:
 	@staticmethod
 	def parse_final_answer(execution_output: str) -> str:
 		# Extract the final answer from the execution output
-		final_answer_index = execution_output.lower().find("final answer:")
+		final_answer_index = execution_output.lower().find("answer:")
 
 		if final_answer_index == -1:
 			return execution_output
 		else:
-			return execution_output[final_answer_index + len("Final Answer:"):].strip()
+			return execution_output[final_answer_index + len("Answer:"):].strip()
 
 	@staticmethod
 	def split_general_actions(general_response: str) -> tuple:
