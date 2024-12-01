@@ -32,10 +32,10 @@ Response:
 Main Goal: {Summarize the main goal based on the query.}
 
 Tasks:
+[GOAL]: {Description of the whole objective}
 [1]: {Task description}
 [2]: {Task description}
 [3]: {Task description}
-[Answer]: {Description of the whole objective}
 ...
 
 Response:
