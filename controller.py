@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from os import getenv
 from segmentor import ImageSegmenter
 import re
-from functions import user_interaction, calculate
+from functions import calculate
 
 load_dotenv()
 OPENAI_API_KEY = getenv("OPENAI_API_KEY")
@@ -40,9 +40,15 @@ class Controller:
 			sam_cfg="C:/Users/Usuario/Documents/Projectes/LauzHack2024/LauzHack2024/samsam/sam2/configs/sam2.1/sam2.1_hiera_t.yaml",
 			sam_weights="C:/Users/Usuario/Documents/Projectes/LauzHack2024/LauzHack2024/samsam/weights/sam2.1_hiera_tiny.pt"
 		)
+
+		# self.segmenter = ImageSegmenter(
+		# 	grounding_dino_cfg="GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py",
+		# 	grounding_dino_weights="GroundingDINO/weights/groundingdino_swint_ogc.pth",
+		# 	sam_cfg="C:/Users/Cai Selvas Sala/GIA_UPC/Personal/LauzHack/LauzHack_2024/LauzHack2024/samsam/sam2/configs/sam2.1/sam2.1_hiera_t.yaml",
+		# 	sam_weights="C:/Users/Cai Selvas Sala/GIA_UPC/Personal/LauzHack/LauzHack_2024/LauzHack2024/samsam/weights/sam2.1_hiera_tiny.pt"
+		# )
 		self.function_mapping = {
 			"segment": self.segmenter.segment,
-			"user_interaction": user_interaction,
 			"calculate": calculate,
 			"segment_unique": self.segmenter.segment_unique,
 			"count_people": self.segmenter.count_people,
