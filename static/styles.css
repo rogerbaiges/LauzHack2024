@@ -291,3 +291,34 @@ body {
 .feedback-buttons {
     margin-top: 20px;
 }
+
+.selected-images-preview {
+    display: flex;
+    align-items: center; /* Vertically center images */
+    margin-left: 10px; /* Adjust margin as needed */
+}
+
+.preview-thumbnail {
+    width: 30px; /* Adjust thumbnail size as needed */
+    height: 30px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-right: 5px;
+    transition: opacity 0.3s ease-in-out; /* For fade-in effect */
+}
+
+.taskbar-item.selected-to-send {
+    border: 2px solid #007bff; /* Or any other highlight color */
+}
+
+.action-border { /* Style for action images in taskbar */
+    border: 2px solid #FFA500; /* Example: Orange border */
+    border-radius: 5px; /* Optional: Rounded corners */
+  }
+  
+  .action-image { /* Style for action images in chat */
+      max-width: 200px; /* Adjust as needed */
+      max-height: 200px;
+      margin: 5px;
+      cursor: pointer; /* Indicate clickable for larger view */
+  }

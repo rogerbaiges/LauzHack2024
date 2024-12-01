@@ -15,6 +15,8 @@
                 <div id="chat-history" class="chat-history">
                     <!-- Chat messages will appear here -->
                 </div>
+                    <div class="selected-images-preview" id="selected-images-preview">
+                    </div>
                 <div class="input-container">
                     <input type="text" id="user-input" placeholder="Type your message or command...">
                     <button id="send-button" class="btn"><i class="fas fa-paper-plane"></i></button>
@@ -47,18 +49,18 @@
         </div>
     </div>
 
-    <!-- Feedback Modal (similar to your popup) -->
-        <div id="feedback-modal" class="feedback-modal hidden">
-            <div class="feedback-content">
-            <div id="feedback-images" class = "feedback-images"> </div>
-              <p id="feedback-question">LLM Feedback Request:</p>
-              <div class="feedback-buttons">
+
+    
+    <div id="feedback-modal" class="feedback-modal hidden">
+        <div class="feedback-content">
+            <div id="feedback-images" class="feedback-images"></div>
+            <p id="feedback-question">LLM Feedback Request:</p>
+            <div class="feedback-buttons">
                 <button id="feedback-confirm" class="btn"><i class="fas fa-check"></i> Confirm</button>
                 <button id="feedback-reject" class="btn cancel"><i class="fas fa-times"></i> Reject</button>
-              </div>
             </div>
-          </div>
-
+        </div>
+    </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

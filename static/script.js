@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const imagePlaceholder = document.getElementById('image-placeholder');
     let uploadedImages = [];
     let currentImageIndex = -1;
+    let selectedImages = [];
     let activeEditorTool = null;
     let ctx = null;
     let isDrawing = false;
@@ -96,6 +97,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        function addImageToTaskbar(imageUrl, borderClass) {
+            const taskbarItem = document.createElement('div');
+            taskbarItem.classList.add('taskbar-item', borderClass); // Add border class
+    
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = 'Action Image';
+            taskbarItem.appendChild(img);
+    
+            // You might want to add a click handler to view the larger image here as well
+    
+            imageTaskbar.appendChild(taskbarItem);
+        }
+
      // Function to read and add an image
         function addImage(file) {
              const reader = new FileReader();
@@ -146,8 +161,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
             taskbarItem.addEventListener('click', () => {
                 loadImageToViewer(index);
+                const imageData = uploadedImages[index];
+                const isSelected = selectedImages.includes(imageData);
+
+                if (isSelected) {
+                    selectedImages = selectedImages.filter(img => img !== imageData);
+                    taskbarItem.classList.remove('selected-to-send');
+                } else {
+                    selectedImages.push(imageData);
+                    taskbarItem.classList.add('selected-to-send');
+                }
+                updateSelectedImagesPreview();
             });
             imageTaskbar.appendChild(taskbarItem);
+        });
+    }
+
+    function updateSelectedImagesPreview() {
+        const previewContainer = document.getElementById('selected-images-preview');
+        previewContainer.innerHTML = ''; // Clear previous previews
+    
+        selectedImages.forEach((imageData) => {
+            const img = document.createElement('img');
+            img.src = imageData.dataUrl;
+            img.alt = 'Selected Image';
+            img.classList.add('preview-thumbnail'); // Add class for styling/animation
+            previewContainer.appendChild(img);
+    
+            // Simple fade-in animation
+            img.style.opacity = 0;
+            setTimeout(() => {
+                img.style.opacity = 1;
+            }, 100);
         });
     }
 
@@ -295,8 +340,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
         const formData = new FormData();
         formData.append('message', message);
-        Array.from(images).forEach((file) => {
-            formData.append('images', file);
+        selectedImages.forEach((imgData) => {
+            formData.append('images', imgData.file); // Send selected image files
         });
 
         displayChatMessage(message, 'user');
@@ -306,16 +351,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 body: formData,
             });
-    
+
             if (!response.ok) throw new Error('Failed to process message.');
-    
-            const data = await response.json();
-            if(data.chat_history && data.chat_history.length >0){
-                const lastMessage = data.chat_history[data.chat_history.length-1];
-                 if(lastMessage.sender === 'bot'){
-                     displayChatMessage(lastMessage.message, lastMessage.sender, lastMessage.imageUrl);
-                 }
-             }
+
+            const reader = response.body.getReader();
+            let decoder = new TextDecoder("utf-8");
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                let chunk = decoder.decode(value);
+                // Split the chunk into individual JSON objects (messages)
+                let messages = chunk.split('\n').filter(msg => msg.trim() !== ""); 
+                for (let message of messages) {
+                    try {
+                        let data = JSON.parse(message);
+                        if (data.sender === 'bot') {
+                            displayChatMessage(data.message, data.sender, data.imageUrl);
+                        } else {
+                            displayAction(data);
+                            addImageToTaskbar(data.imageUrl, 'action-border'); // Add image to taskbar
+                        }
+                    } catch (e) {
+                    console.error("Could not parse JSON:", message, e); // Handle possible parsing errors
+                  }
+                }
+            }
+
         } catch (error) {
             console.error('Error sending message:', error);
         }
@@ -330,6 +392,24 @@ document.addEventListener('DOMContentLoaded', () => {
         history.forEach((entry) => {
             displayChatMessage(entry.message, entry.sender);
         });
+    }
+
+    function displayAction(actionData) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('action-message');  // Style for action updates
+        messageDiv.innerHTML = `<strong>${actionData.title}</strong>: ${actionData.result}`; // Show task title & result
+
+        if (actionData.imageUrl) {
+            const img = document.createElement('img');
+            img.src = actionData.imageUrl;
+            img.classList.add('action-image');
+            img.alt = actionData.title;
+            // ... (Add click event for enlarged view as before if needed)
+            messageDiv.appendChild(img);
+        }
+
+        chatHistory.appendChild(messageDiv);
+        chatHistory.scrollTop = chatHistory.scrollHeight; 
     }
     
 
@@ -392,7 +472,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sendButton.addEventListener('click', sendMessage);
     resetButton.addEventListener('click', resetConversation);
-    imageInput.addEventListener('change', () => previewImages(imageInput.files));
     feedbackConfirm.addEventListener('click', () => {
         feedbackModal.classList.add('hidden');
         alert('Confirmed!');
