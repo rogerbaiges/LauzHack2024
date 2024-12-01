@@ -9,7 +9,7 @@ import os
 import sys
 from lwcc import LWCC
 current_dir = os.getcwd()
-
+import face_recognition
 
 
 class ImageSegmenter:
@@ -176,6 +176,41 @@ class ImageSegmenter:
         mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
         ax.imshow(mask_image)
 
+    def find_person_in_images(self, reference_image_path, images_paths):
+        """
+        Finds images containing the same person as in the reference image.
+
+        Args:
+            reference_image_path (str): Path to the image of the person to find.
+            images_paths (list of str): Paths to the images to search in.
+
+        Returns:
+            list of str: Paths of images containing the person.
+        """
+
+        reference_image = face_recognition.load_image_file(reference_image_path)
+        try:
+            reference_face_encoding = face_recognition.face_encodings(reference_image)[0]
+        except IndexError:
+            print("No face found in reference image.")
+            return []
+
+        known_faces = [reference_face_encoding]
+        found_images = []
+
+        for image_path in images_paths:
+            img = face_recognition.load_image_file(image_path)
+            face_locations = face_recognition.face_locations(img)
+            face_encodings = face_recognition.face_encodings(img, face_locations)
+
+            for face_encoding in face_encodings:
+                matches = face_recognition.compare_faces(known_faces, face_encoding)
+                if True in matches:
+                    found_images.append(image_path)
+                    break  # If face found, no need to check other faces in the image
+
+        return found_images
+
 if __name__ == "__main__":
     # Add the parent directory of 'samsam' to the system path
     sys.path.append(os.path.abspath(os.path.join(current_dir, './samsam/')))
@@ -207,6 +242,8 @@ if __name__ == "__main__":
     people_count = segmenter.count_people(image_path=image_path)
     print(f"Number of people detected: {people_count}")
     """
+
+    """
     boxes = segmenter.load_and_predict_dino("deposits.png", "circle.")
     masks = segmenter.segment_masks()
 
@@ -217,4 +254,21 @@ if __name__ == "__main__":
     plt.imshow(final_image)
     plt.axis('off')
     plt.show()
+    """
+
+
+    reference_image_path = "reference.png"
+    faces_folder = "faces"
+    faces_images_paths = [os.path.join(faces_folder, img) for img in os.listdir(faces_folder) if img.endswith((".png", ".jpg", ".jpeg"))]
+
+    matching_images = segmenter.find_person_in_images(reference_image_path, faces_images_paths)
+
+    if matching_images:
+        print("Images containing the same person as in 'reference.png':")
+        for image_path in matching_images:
+            print(image_path)
+            plt.imshow(Image.open(image_path))
+            plt.show()
+    else:
+        print("No matching images found.")
     
