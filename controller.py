@@ -66,13 +66,14 @@ class Controller:
 			execution_response = self.execution_llm.ask(self.concatenate_execution_prompt(action_title, goal, [self.actions[j]["result"] for j in range(i)]))
 			function_call_string = self.parse_function_call(execution_response)
 			print(function_call_string)
-			result = self.execute_function(function_call_string, image_path)
+			result, image_path = self.execute_function(function_call_string, image_path)
 			self.actions.append({
 				"title": action_title,
 				"function_name": function_call_string["function_name"],
 				"arguments": function_call_string["arguments"],
 				"answer": function_call_string["answer"],
-				"result": result
+				"result": result,
+				"image_path": image_path
 			})
 			self.num_actions += 1
 
@@ -133,7 +134,7 @@ class Controller:
 		if final_answer_index == -1:
 			return execution_output
 		else:
-			return execution_output[final_answer_index:].strip()
+			return execution_output[final_answer_index + len("Final Answer:"):].strip()
 
 	@staticmethod
 	def split_general_actions(general_response: str) -> tuple:
@@ -157,4 +158,3 @@ class Controller:
 			return self.function_mapping[function_call["function_name"]](image_path, *function_call["arguments"])
 		else:
 			raise Exception(f"Function {function_call['function_name']} not found.")
-
